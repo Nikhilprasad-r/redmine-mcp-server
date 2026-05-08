@@ -1,0 +1,68 @@
+name: Bug report
+description: Report a reproducible problem in the Redmine MCP Server.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug.
+        Please provide as much detail as possible so we can reproduce quickly.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the issue.
+      placeholder: redmine_issue_get fails when include=relations
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps, commands, and/or payloads.
+      placeholder: |
+        1. Set REDMINE_BASE_URL=...
+        2. Run npm run dev
+        3. Call redmine_issue_get with ...
+        4. Observe error ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: The tool should return issue details with relations.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: Received HTTP 500 with message ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and error output
+      description: Paste relevant logs. Remove secrets such as API keys.
+      render: shell
+  - type: input
+    id: versions
+    attributes:
+      label: Environment
+      description: Node.js version, OS, Redmine version (if known).
+      placeholder: Node 20.11, macOS 15, Redmine 5.1
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues before creating this report.
+          required: true
+        - label: I removed sensitive information from logs and payloads.
+          required: true
