@@ -42,3 +42,53 @@ When filing a bug report, include:
 - Reproduction steps.
 - Expected vs actual behavior.
 - Relevant logs or error messages (redacted if sensitive).
+
+## Public Distribution (Docker + MCP Registry)
+
+Use this checklist when preparing a public release so users can pull and run the
+server directly.
+
+1. Bump version in `package.json`.
+2. Build and test locally:
+
+```bash
+npm run lint
+npm test
+```
+
+3. Build and push Docker image tags:
+
+```bash
+export IMAGE=docker.io/<docker-user>/redmine-mcp-server
+export TAG=<version>
+
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t $IMAGE:$TAG \
+  -t $IMAGE:latest \
+  --push .
+```
+
+4. Verify pull and startup from a clean environment:
+
+```bash
+docker run --rm -i \
+  -e REDMINE_BASE_URL="https://redmine.example.com" \
+  -e REDMINE_API_KEY="your_api_key_here" \
+  docker.io/<docker-user>/redmine-mcp-server:$TAG
+```
+
+5. Create a GitHub release and include:
+   - Version notes and migration notes (if any).
+   - Docker image references (`$IMAGE:$TAG` and `latest`).
+   - Minimum supported Node.js version.
+
+6. Add or update MCP registry entry metadata (where applicable):
+   - Server name: `redmine-mcp-server`
+   - Source repository URL
+   - Docker image reference
+   - Required environment variables (`REDMINE_BASE_URL`, `REDMINE_API_KEY`)
+   - Safety notes (`REDMINE_READONLY`, destructive operations requiring `confirm`)
+   - Use `REGISTRY_PUBLISHING.md` for copy-ready templates across registries.
+
+7. Re-check documentation links in `README.md` after release.
