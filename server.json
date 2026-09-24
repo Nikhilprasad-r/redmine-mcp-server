@@ -1,0 +1,83 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Nikhilprasad-r/redmine-mcp-connector",
+  "description": "stdio MCP server wrapping the Redmine REST API: issues, projects, users, time, wiki, versions.",
+  "repository": {
+    "url": "https://github.com/Nikhilprasad-r/redmine-mcp-server",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "redmine-mcp-connector",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "REDMINE_BASE_URL",
+          "description": "Base URL of your Redmine instance, no trailing slash (e.g. https://redmine.example.com)",
+          "isRequired": true,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "REDMINE_API_KEY",
+          "description": "Redmine API access key (My account -> Show API access key)",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "REDMINE_IMPERSONATE_USER",
+          "description": "Admin-only impersonation login, sets X-Redmine-Switch-User",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "REDMINE_READONLY",
+          "description": "If true, blocks all mutating HTTP methods (POST, PUT, PATCH, DELETE)",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string",
+          "default": "false"
+        },
+        {
+          "name": "REDMINE_ALLOW_RAW_REQUEST",
+          "description": "If true, registers the redmine_request escape-hatch tool for arbitrary REST paths",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string",
+          "default": "false"
+        },
+        {
+          "name": "REDMINE_HTTP_TIMEOUT_MS",
+          "description": "HTTP timeout in milliseconds",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string",
+          "default": "15000"
+        },
+        {
+          "name": "REDMINE_MAX_PAGES",
+          "description": "Max pages when using fetch_all on list tools",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string",
+          "default": "20"
+        },
+        {
+          "name": "REDMINE_MAX_DOWNLOAD_BYTES",
+          "description": "Cap for redmine_attachment_download, in bytes (default 5 MiB)",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string",
+          "default": "5242880"
+        }
+      ]
+    }
+  ]
+}
