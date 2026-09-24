@@ -1,6 +1,6 @@
 {
   "name": "redmine-mcp-connector",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server exposing Redmine REST API as tools (stdio)",
   "mcpName": "io.github.Nikhilprasad-r/redmine-mcp-connector",
   "repository": {
@@ -9,6 +9,12 @@
   },
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "redmine-mcp-connector": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
