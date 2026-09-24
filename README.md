@@ -10,8 +10,17 @@ stdio-based [Model Context Protocol](https://modelcontextprotocol.io) server tha
 
 ## Install
 
+No install needed for normal use — coding agents launch it on demand via `npx`:
+
 ```bash
-cd mcp-server
+npx -y redmine-mcp-connector
+```
+
+See [CONNECTING.md](CONNECTING.md) for exact setup instructions for Claude Desktop, Claude Code, Cursor, Windsurf, Cline, VS Code, Zed, and any other MCP client, plus a local-build and Docker alternative.
+
+To hack on the server itself, clone this repo instead:
+
+```bash
 npm install
 npm run build
 ```
@@ -39,16 +48,16 @@ REDMINE_BASE_URL=https://your-redmine.example.com REDMINE_API_KEY=secret npm sta
 REDMINE_BASE_URL=... REDMINE_API_KEY=... npm run dev
 ```
 
-## Claude Desktop / Cursor
+## Connecting to a coding agent
 
-Add to your MCP client config (paths must be absolute):
+Full per-client instructions (Claude Desktop, Claude Code, Cursor, Windsurf, Cline, VS Code, Zed, and generic MCP clients) live in **[CONNECTING.md](CONNECTING.md)**. Quick example (Claude Desktop / Cursor / Windsurf all share this shape):
 
 ```json
 {
   "mcpServers": {
     "redmine": {
-      "command": "node",
-      "args": ["/absolute/path/to/redmine/mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "redmine-mcp-connector"],
       "env": {
         "REDMINE_BASE_URL": "https://redmine.example.com",
         "REDMINE_API_KEY": "your_api_key_here"
@@ -176,6 +185,7 @@ npm test
 
 Contributions are welcome.
 
+- See [`CONNECTING.md`](CONNECTING.md) for detailed client setup instructions.
 - Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for local setup, coding expectations, and PR workflow.
 - Follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) to keep collaboration respectful and inclusive.
 - Use [`SUPPORT.md`](SUPPORT.md) for help channels and what details to include.
