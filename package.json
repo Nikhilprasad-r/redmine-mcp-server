@@ -1,7 +1,12 @@
 {
-  "name": "redmine-mcp-server",
+  "name": "redmine-mcp-connector",
   "version": "1.0.0",
   "description": "MCP server exposing Redmine REST API as tools (stdio)",
+  "mcpName": "io.github.Nikhilprasad-r/redmine-mcp-connector",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nikhilprasad-r/redmine-mcp-server.git"
+  },
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
