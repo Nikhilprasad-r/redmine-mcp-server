@@ -180,6 +180,7 @@ Contributions are welcome.
 - Follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) to keep collaboration respectful and inclusive.
 - Use [`SUPPORT.md`](SUPPORT.md) for help channels and what details to include.
 - Report vulnerabilities privately following [`SECURITY.md`](SECURITY.md).
+- For public distribution templates (Docker + MCP directories), see [`REGISTRY_PUBLISHING.md`](REGISTRY_PUBLISHING.md).
 
 ## License
 
