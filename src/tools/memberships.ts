@@ -1,10 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { confirmDestructiveSchema, idOrIdentifier, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
 
 export function registerMembershipTools(server: McpServer, ctx: AppContext): string[] {
   const names: string[] = [];
@@ -13,6 +13,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
   server.registerTool(
     "redmine_project_memberships_list",
     {
+      ...readTool("List project memberships"),
       description: "List project memberships (GET /projects/:id/memberships.json).",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -27,10 +28,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -39,6 +37,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
   server.registerTool(
     "redmine_membership_create",
     {
+      ...writeTool("Add project member"),
       description: "Create membership (POST /projects/:project_id/memberships.json).",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -55,10 +54,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -67,6 +63,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
   server.registerTool(
     "redmine_membership_update",
     {
+      ...destructiveTool("Update project membership roles"),
       description: "Update membership (PUT /memberships/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -80,10 +77,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
         const data = await ctx.client.put(`/memberships/${id}.json`, { membership });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -92,6 +86,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
   server.registerTool(
     "redmine_membership_delete",
     {
+      ...destructiveTool("Remove project member"),
       description: "Delete membership (DELETE /memberships/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -107,10 +102,7 @@ export function registerMembershipTools(server: McpServer, ctx: AppContext): str
         await ctx.client.delete(`/memberships/${id}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );

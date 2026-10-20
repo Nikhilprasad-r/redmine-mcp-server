@@ -1,14 +1,22 @@
 {
   "name": "redmine-mcp-connector",
-  "version": "1.0.1",
-  "description": "MCP server exposing Redmine REST API as tools (stdio)",
+  "version": "1.1.0",
+  "description": "MCP server exposing the Redmine REST API as tools (stdio CLI and embeddable library)",
   "mcpName": "io.github.Nikhilprasad-r/redmine-mcp-connector",
   "repository": {
     "type": "git",
     "url": "https://github.com/Nikhilprasad-r/redmine-mcp-server.git"
   },
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/lib.js",
+  "types": "dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "redmine-mcp-connector": "dist/index.js"
   },

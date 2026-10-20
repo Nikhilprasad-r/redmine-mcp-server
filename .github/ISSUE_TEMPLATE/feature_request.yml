@@ -14,7 +14,7 @@ body:
     attributes:
       label: Problem statement
       description: What user problem are you trying to solve?
-      placeholder: I cannot fetch X from Redmine without using redmine_request.
+      placeholder: I cannot fetch X from Redmine without using redmine_request_get.
     validations:
       required: true
   - type: textarea

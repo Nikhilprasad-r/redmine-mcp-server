@@ -1,10 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { confirmDestructiveSchema, idOrIdentifier, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
 
 export function registerNewsTools(server: McpServer, ctx: AppContext): string[] {
   const names: string[] = [];
@@ -13,6 +13,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_news_list",
     {
+      ...readTool("List news"),
       description: "List news (GET /news.json).",
       inputSchema: z.object({
         ...paginationSchema,
@@ -28,10 +29,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -40,6 +38,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_news_get",
     {
+      ...readTool("Get news item"),
       description: "Get news item (GET /news/:id.json).",
       inputSchema: z.object({ id: z.coerce.number().int().positive() }),
     },
@@ -48,10 +47,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
         const data = await ctx.client.get(`/news/${id}.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -60,6 +56,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_news_create",
     {
+      ...writeTool("Create news item"),
       description: "Create news (POST /projects/:project_id/news.json or POST /news.json with project identifier).",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -76,10 +73,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -88,6 +82,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_news_update",
     {
+      ...destructiveTool("Update news item"),
       description: "Update news (PUT /news/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -101,10 +96,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
         const data = await ctx.client.put(`/news/${id}.json`, { news });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -113,6 +105,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_news_delete",
     {
+      ...destructiveTool("Delete news item"),
       description: "Delete news (DELETE /news/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -128,10 +121,7 @@ export function registerNewsTools(server: McpServer, ctx: AppContext): string[] 
         await ctx.client.delete(`/news/${id}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );

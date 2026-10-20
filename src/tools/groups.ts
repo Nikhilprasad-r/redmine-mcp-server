@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { paginationSchema } from "../util/schemas.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { readTool } from "../util/annotations.js";
 
 /** Read-only group tools (list/get). Mutations omitted by design. */
 export function registerGroupTools(server: McpServer, ctx: AppContext): string[] {
@@ -13,6 +13,7 @@ export function registerGroupTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_groups_list",
     {
+      ...readTool("List groups"),
       description: "List groups (GET /groups.json). May require admin permissions.",
       inputSchema: z.object({ ...paginationSchema }),
     },
@@ -24,10 +25,7 @@ export function registerGroupTools(server: McpServer, ctx: AppContext): string[]
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -36,6 +34,7 @@ export function registerGroupTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_group_get",
     {
+      ...readTool("Get group"),
       description: "Get group (GET /groups/:id.json).",
       inputSchema: z.object({ id: z.coerce.number().int().positive() }),
     },
@@ -44,10 +43,7 @@ export function registerGroupTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.get(`/groups/${id}.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );

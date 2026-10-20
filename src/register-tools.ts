@@ -6,7 +6,7 @@ import { registerIssueTools } from "./tools/issues.js";
 import { registerMembershipTools } from "./tools/memberships.js";
 import { registerNewsTools } from "./tools/news.js";
 import { registerProjectTools } from "./tools/projects.js";
-import { registerRawRequestTool } from "./tools/raw-request.js";
+import { registerRawRequestTools } from "./tools/raw-request.js";
 import { registerTimeEntryTools } from "./tools/time-entries.js";
 import { registerUserTools } from "./tools/users.js";
 import { registerVersionsCategoriesQueriesTools } from "./tools/versions-categories-queries.js";
@@ -25,7 +25,7 @@ export function registerAllTools(server: McpServer, ctx: AppContext): string[] {
   names.push(...registerMembershipTools(server, ctx));
   names.push(...registerAttachmentsSearchReposTools(server, ctx));
   if (ctx.config.REDMINE_ALLOW_RAW_REQUEST) {
-    names.push(...registerRawRequestTool(server, ctx));
+    names.push(...registerRawRequestTools(server, ctx));
   }
   return names;
 }

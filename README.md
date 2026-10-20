@@ -35,7 +35,7 @@ Environment variables (see [`.env.example`](.env.example)):
 | `REDMINE_API_KEY` | yes | `X-Redmine-API-Key` value |
 | `REDMINE_IMPERSONATE_USER` | no | Sets `X-Redmine-Switch-User` (admin-only in Redmine) |
 | `REDMINE_READONLY` | no | If `true` / `1`, blocks all mutating HTTP methods |
-| `REDMINE_ALLOW_RAW_REQUEST` | no | If `true` / `1`, registers the `redmine_request` escape-hatch tool |
+| `REDMINE_ALLOW_RAW_REQUEST` | no | If `true` / `1`, registers the `redmine_request_get/post/put/delete` escape-hatch tools |
 | `REDMINE_HTTP_TIMEOUT_MS` | no | Default `15000` |
 | `REDMINE_MAX_PAGES` | no | Max pages when using `fetch_all` on list tools (default `20`) |
 | `REDMINE_MAX_DOWNLOAD_BYTES` | no | Cap for `redmine_attachment_download` (default 5 MiB) |
@@ -66,6 +66,22 @@ Full per-client instructions (Claude Desktop, Claude Code, Cursor, Windsurf, Cli
   }
 }
 ```
+
+## Use as a library
+
+The package also exports the server for embedding, e.g. behind your own Streamable HTTP endpoint with one Redmine connection per authenticated user:
+
+```ts
+import { createConfig, createRedmineServer } from "redmine-mcp-connector";
+
+const { server } = createRedmineServer({
+  config: createConfig({ baseUrl: "https://redmine.example.com", apiKey, readonly: false }),
+  fetch: guardedFetch, // optional: every Redmine call goes through this fetch
+});
+await server.connect(transport);
+```
+
+`createConfig` applies the same validation and defaults as the environment variables above. Importing the package has no side effects; the CLI is the `redmine-mcp-connector` bin.
 
 ## MCP resources (read-only)
 
@@ -102,13 +118,15 @@ Naming: `redmine_<resource>_<action>`.
 
 **Attachments & search:** `redmine_search`, attachment get/update/delete/upload/download (download returns base64, size-capped).
 
-**Repository (limited REST in stock Redmine):** `redmine_repository_revision_link_issue`, `redmine_repository_revision_unlink_issue` (`confirm`). Listing repositories/revisions over JSON is **not** exposed by core Redmine; use `redmine_request` if you enable it, or plugins.
+**Repository (limited REST in stock Redmine):** `redmine_repository_revision_link_issue`, `redmine_repository_revision_unlink_issue` (`confirm`). Listing repositories/revisions over JSON is **not** exposed by core Redmine; use `redmine_request_get` if you enable the escape hatch, or plugins.
 
-**Escape hatch:** `redmine_request` — only if `REDMINE_ALLOW_RAW_REQUEST=true`; `DELETE` requires `confirm: true`.
+**Escape hatch:** `redmine_request_get`, `redmine_request_post`, `redmine_request_put`, `redmine_request_delete` — only if `REDMINE_ALLOW_RAW_REQUEST=true`; `redmine_request_delete` requires `confirm: true`. Split per HTTP method so read and write calls never share a tool.
 
 ## Safety
 
 - Destructive tools require explicit `confirm: true` where noted.
+- Every tool carries MCP annotations (`title`, `readOnlyHint`, `destructiveHint`), so clients such as Claude can run read-only tools without prompting and always ask before updates and deletes. `tests/contract.test.ts` enforces this.
+- Tool results are capped at 100,000 characters with a truncation notice; narrow filters or page with `offset` instead of `fetch_all` on large projects.
 - Set `REDMINE_READONLY=true` for read-only deployments.
 - API keys are never logged by this server.
 

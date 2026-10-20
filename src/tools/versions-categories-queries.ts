@@ -1,10 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { confirmDestructiveSchema, idOrIdentifier, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
 
 export function registerVersionsCategoriesQueriesTools(
   server: McpServer,
@@ -17,6 +17,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_versions_list",
     {
+      ...readTool("List versions"),
       description: "List versions / roadmap for a project (GET /projects/:id/versions.json).",
       inputSchema: z.object({ project_id: idOrIdentifier("project id or identifier") }),
     },
@@ -27,10 +28,7 @@ export function registerVersionsCategoriesQueriesTools(
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -39,6 +37,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_version_get",
     {
+      ...readTool("Get version"),
       description: "Get version (GET /versions/:id.json).",
       inputSchema: z.object({ id: z.coerce.number().int().positive() }),
     },
@@ -47,10 +46,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get(`/versions/${id}.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -59,6 +55,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_version_create",
     {
+      ...writeTool("Create version"),
       description: "Create version (POST /projects/:project_id/versions.json).",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -75,10 +72,7 @@ export function registerVersionsCategoriesQueriesTools(
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -87,6 +81,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_version_update",
     {
+      ...destructiveTool("Update version"),
       description: "Update version (PUT /versions/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -100,10 +95,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.put(`/versions/${id}.json`, { version });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -112,6 +104,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_version_delete",
     {
+      ...destructiveTool("Delete version"),
       description: "Delete version (DELETE /versions/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -127,10 +120,7 @@ export function registerVersionsCategoriesQueriesTools(
         await ctx.client.delete(`/versions/${id}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -140,6 +130,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_issue_categories_list",
     {
+      ...readTool("List issue categories"),
       description: "List issue categories for a project (GET /projects/:id/issue_categories.json).",
       inputSchema: z.object({ project_id: idOrIdentifier("project id or identifier") }),
     },
@@ -150,10 +141,7 @@ export function registerVersionsCategoriesQueriesTools(
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -162,6 +150,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_issue_category_get",
     {
+      ...readTool("Get issue category"),
       description: "Get issue category (GET /issue_categories/:id.json).",
       inputSchema: z.object({ id: z.coerce.number().int().positive() }),
     },
@@ -170,10 +159,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get(`/issue_categories/${id}.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -182,6 +168,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_issue_category_create",
     {
+      ...writeTool("Create issue category"),
       description: "Create issue category (POST /projects/:project_id/issue_categories.json).",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -198,10 +185,7 @@ export function registerVersionsCategoriesQueriesTools(
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -210,6 +194,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_issue_category_update",
     {
+      ...destructiveTool("Update issue category"),
       description: "Update issue category (PUT /issue_categories/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -223,10 +208,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.put(`/issue_categories/${id}.json`, { issue_category });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -235,6 +217,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_issue_category_delete",
     {
+      ...destructiveTool("Delete issue category"),
       description: "Delete issue category (DELETE /issue_categories/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -250,10 +233,7 @@ export function registerVersionsCategoriesQueriesTools(
         await ctx.client.delete(`/issue_categories/${id}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -263,6 +243,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_queries_list",
     {
+      ...readTool("List saved queries"),
       description: "List saved queries visible to the user (GET /queries.json).",
       inputSchema: z.object({
         ...paginationSchema,
@@ -276,10 +257,7 @@ export function registerVersionsCategoriesQueriesTools(
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -289,6 +267,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_enumerations_list",
     {
+      ...readTool("List enumerations"),
       description:
         "List enumeration values (GET /enumerations/:type.json) e.g. issue_priorities, time_entry_activities, document_categories.",
       inputSchema: z.object({
@@ -303,10 +282,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get(`/enumerations/${encodeURIComponent(type)}.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -316,6 +292,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_trackers_list",
     {
+      ...readTool("List trackers"),
       description: "List trackers (GET /trackers.json).",
       inputSchema: z.object({}),
     },
@@ -324,10 +301,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get("/trackers.json");
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -337,6 +311,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_issue_statuses_list",
     {
+      ...readTool("List issue statuses"),
       description: "List issue statuses (GET /issue_statuses.json).",
       inputSchema: z.object({}),
     },
@@ -345,10 +320,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get("/issue_statuses.json");
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -358,6 +330,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_roles_list",
     {
+      ...readTool("List roles"),
       description: "List roles (GET /roles.json).",
       inputSchema: z.object({}),
     },
@@ -366,10 +339,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get("/roles.json");
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -378,6 +348,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_role_get",
     {
+      ...readTool("Get role"),
       description: "Get role (GET /roles/:id.json).",
       inputSchema: z.object({ id: z.coerce.number().int().positive() }),
     },
@@ -386,10 +357,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get(`/roles/${id}.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -399,6 +367,7 @@ export function registerVersionsCategoriesQueriesTools(
   server.registerTool(
     "redmine_custom_fields_list",
     {
+      ...readTool("List custom fields"),
       description: "List custom fields (GET /custom_fields.json).",
       inputSchema: z.object({ type: z.string().optional() }),
     },
@@ -407,10 +376,7 @@ export function registerVersionsCategoriesQueriesTools(
         const data = await ctx.client.get("/custom_fields.json", { type });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );

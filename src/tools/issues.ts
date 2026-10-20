@@ -1,11 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { fetchAllRedmineList } from "../redmine/pagination.js";
 import { confirmDestructiveSchema, idOrIdentifier, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
 
 const includeIssue = z.enum([
   "children",
@@ -24,6 +24,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issues_list",
     {
+      ...readTool("List issues"),
       description:
         "List issues (GET /issues.json). Supports filters and optional fetch_all to merge pages.",
       inputSchema: z.object({
@@ -75,10 +76,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -87,6 +85,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_get",
     {
+      ...readTool("Get issue"),
       description: "Get a single issue (GET /issues/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -98,10 +97,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.get(`/issues/${id}.json`, { include });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -110,6 +106,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_create",
     {
+      ...writeTool("Create issue"),
       description: "Create an issue (POST /issues.json). Body uses Redmine issue JSON shape.",
       inputSchema: z.object({
         issue: z.record(z.unknown()).describe("Issue attributes, e.g. { project_id, tracker_id, subject, description }"),
@@ -122,10 +119,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.post("/issues.json", { issue });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -134,6 +128,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_update",
     {
+      ...destructiveTool("Update issue"),
       description:
         "Update an issue including notes/comments (PUT /issues/:id.json). Pass issue fields and optional notes.",
       inputSchema: z.object({
@@ -148,10 +143,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.put(`/issues/${id}.json`, { issue });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -160,6 +152,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_add_comment",
     {
+      ...writeTool("Add issue comment"),
       description: "Add a journal note to an issue (same as update with notes only).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -176,10 +169,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.put(`/issues/${id}.json`, { issue });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -188,6 +178,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_delete",
     {
+      ...destructiveTool("Delete issue"),
       description: "Delete an issue (DELETE /issues/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -203,10 +194,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         await ctx.client.delete(`/issues/${id}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -215,6 +203,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_add_watcher",
     {
+      ...writeTool("Add issue watcher"),
       description: "Add a watcher to an issue (POST /issues/:id/watchers.json).",
       inputSchema: z.object({
         issue_id: z.coerce.number().int().positive(),
@@ -228,10 +217,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.post(`/issues/${issue_id}/watchers.json`, { user_id });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -240,6 +226,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_remove_watcher",
     {
+      ...destructiveTool("Remove issue watcher"),
       description: "Remove a watcher from an issue (DELETE /issues/:issue_id/watchers/:user_id.json).",
       inputSchema: z.object({
         issue_id: z.coerce.number().int().positive(),
@@ -253,10 +240,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         await ctx.client.delete(`/issues/${issue_id}/watchers/${user_id}.json`);
         return toolJson({ ok: true });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -265,6 +249,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_relations_list",
     {
+      ...readTool("List issue relations"),
       description: "List relations for an issue (GET /issues/:id/relations.json).",
       inputSchema: z.object({ issue_id: z.coerce.number().int().positive() }),
     },
@@ -273,10 +258,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.get(`/issues/${issue_id}/relations.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -285,6 +267,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_add_relation",
     {
+      ...writeTool("Add issue relation"),
       description: "Add a relation between issues (POST /issues/:id/relations.json).",
       inputSchema: z.object({
         issue_id: z.coerce.number().int().positive(),
@@ -304,10 +287,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         const data = await ctx.client.post(`/issues/${issue_id}/relations.json`, { relation });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -316,6 +296,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
   server.registerTool(
     "redmine_issue_remove_relation",
     {
+      ...destructiveTool("Remove issue relation"),
       description: "Delete an issue relation (DELETE /relations/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         relation_id: z.coerce.number().int().positive(),
@@ -331,10 +312,7 @@ export function registerIssueTools(server: McpServer, ctx: AppContext): string[]
         await ctx.client.delete(`/relations/${relation_id}.json`);
         return toolJson({ ok: true, deleted_relation_id: relation_id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
