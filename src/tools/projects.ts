@@ -1,11 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { fetchAllRedmineList } from "../redmine/pagination.js";
 import { confirmDestructiveSchema, idOrIdentifier, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
 
 const projectInclude = z.enum([
   "trackers",
@@ -22,6 +22,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
   server.registerTool(
     "redmine_projects_list",
     {
+      ...readTool("List projects"),
       description: "List projects (GET /projects.json).",
       inputSchema: z.object({
         ...paginationSchema,
@@ -52,10 +53,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -64,6 +62,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
   server.registerTool(
     "redmine_project_get",
     {
+      ...readTool("Get project"),
       description: "Get project (GET /projects/:id.json).",
       inputSchema: z.object({
         id: idOrIdentifier("project id or identifier"),
@@ -77,10 +76,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -89,6 +85,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
   server.registerTool(
     "redmine_project_create",
     {
+      ...writeTool("Create project"),
       description: "Create project (POST /projects.json).",
       inputSchema: z.object({ project: z.record(z.unknown()) }),
     },
@@ -99,10 +96,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
         const data = await ctx.client.post("/projects.json", { project });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -111,6 +105,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
   server.registerTool(
     "redmine_project_update",
     {
+      ...destructiveTool("Update project"),
       description: "Update project (PUT /projects/:id.json).",
       inputSchema: z.object({
         id: idOrIdentifier("project id or identifier"),
@@ -126,10 +121,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -138,6 +130,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
   server.registerTool(
     "redmine_project_archive",
     {
+      ...destructiveTool("Archive project"),
       description: "Archive project (PUT /projects/:id/archive.json).",
       inputSchema: z.object({ id: idOrIdentifier("project id or identifier") }),
     },
@@ -151,10 +144,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -163,6 +153,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
   server.registerTool(
     "redmine_project_unarchive",
     {
+      ...destructiveTool("Unarchive project"),
       description: "Unarchive project (PUT /projects/:id/unarchive.json).",
       inputSchema: z.object({ id: idOrIdentifier("project id or identifier") }),
     },
@@ -176,10 +167,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -188,6 +176,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
   server.registerTool(
     "redmine_project_delete",
     {
+      ...destructiveTool("Delete project"),
       description: "Delete project (DELETE /projects/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: idOrIdentifier("project id or identifier"),
@@ -203,10 +192,7 @@ export function registerProjectTools(server: McpServer, ctx: AppContext): string
         await ctx.client.delete(`/projects/${encodeURIComponent(String(id))}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );

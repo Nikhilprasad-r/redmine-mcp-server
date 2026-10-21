@@ -1,14 +1,22 @@
 {
   "name": "redmine-mcp-connector",
-  "version": "1.0.1",
-  "description": "MCP server exposing Redmine REST API as tools (stdio)",
+  "version": "1.1.0",
+  "description": "MCP server exposing the Redmine REST API as tools (stdio CLI and embeddable library)",
   "mcpName": "io.github.Nikhilprasad-r/redmine-mcp-connector",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Nikhilprasad-r/redmine-mcp-server.git"
+    "url": "git+https://github.com/Nikhilprasad-r/redmine-mcp-server.git"
   },
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/lib.js",
+  "types": "dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "redmine-mcp-connector": "dist/index.js"
   },
@@ -24,7 +32,9 @@
     "lint": "eslint src",
     "docker:build": "docker build -t redmine-mcp-server:local .",
     "docker:run": "docker run --rm -i -e REDMINE_BASE_URL -e REDMINE_API_KEY -e REDMINE_READONLY -e REDMINE_ALLOW_RAW_REQUEST -e REDMINE_HTTP_TIMEOUT_MS -e REDMINE_MAX_PAGES -e REDMINE_MAX_DOWNLOAD_BYTES redmine-mcp-server:local",
-    "docker:publish": "echo \"Use: docker buildx build --platform linux/amd64,linux/arm64 -t <docker-user>/redmine-mcp-server:<tag> -t <docker-user>/redmine-mcp-server:latest --push .\""
+    "docker:publish": "echo \"Use: docker buildx build --platform linux/amd64,linux/arm64 -t <docker-user>/redmine-mcp-server:<tag> -t <docker-user>/redmine-mcp-server:latest --push .\"",
+    "prebuild": "node -e \"require(\\\"node:fs\\\").rmSync(\\\"dist\\\",{recursive:true,force:true})\"",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
   },
   "keywords": [
     "mcp",

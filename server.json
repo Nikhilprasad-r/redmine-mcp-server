@@ -6,12 +6,12 @@
     "url": "https://github.com/Nikhilprasad-r/redmine-mcp-server",
     "source": "github"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "redmine-mcp-connector",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "transport": {
         "type": "stdio"
       },
@@ -47,7 +47,7 @@
         },
         {
           "name": "REDMINE_ALLOW_RAW_REQUEST",
-          "description": "If true, registers the redmine_request escape-hatch tool for arbitrary REST paths",
+          "description": "If true, registers the redmine_request_get/post/put/delete escape-hatch tools for arbitrary REST paths",
           "isRequired": false,
           "isSecret": false,
           "format": "string",

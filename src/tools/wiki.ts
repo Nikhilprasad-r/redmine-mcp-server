@@ -1,10 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { confirmDestructiveSchema, idOrIdentifier } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool } from "../util/annotations.js";
 
 export function registerWikiTools(server: McpServer, ctx: AppContext): string[] {
   const names: string[] = [];
@@ -13,6 +13,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_wiki_pages_list",
     {
+      ...readTool("List wiki pages"),
       description: "List wiki pages for a project (GET /projects/:id/wiki/index.json).",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -25,10 +26,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -37,6 +35,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_wiki_page_get",
     {
+      ...readTool("Get wiki page"),
       description: "Get wiki page (GET /projects/:project/wiki/:title.json).",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -52,10 +51,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -64,6 +60,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_wiki_page_create_or_update",
     {
+      ...destructiveTool("Create or update wiki page"),
       description:
         "Create or update wiki page (PUT /projects/:project/wiki/:title.json). Redmine uses update for new pages.",
       inputSchema: z.object({
@@ -82,10 +79,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
         );
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -94,6 +88,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_wiki_page_delete",
     {
+      ...destructiveTool("Delete wiki page"),
       description: "Delete wiki page (DELETE /projects/:project/wiki/:title.json). Requires confirm: true.",
       inputSchema: z.object({
         project_id: idOrIdentifier("project id or identifier"),
@@ -112,10 +107,7 @@ export function registerWikiTools(server: McpServer, ctx: AppContext): string[] 
         );
         return toolJson({ ok: true, title });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );

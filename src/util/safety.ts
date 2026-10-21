@@ -11,7 +11,7 @@ export function assertWritable(config: AppConfig): CallToolResult | null {
 
 export function assertRawRequestAllowed(config: AppConfig): CallToolResult | null {
   if (!config.REDMINE_ALLOW_RAW_REQUEST) {
-    return toolError("redmine_request is disabled. Set REDMINE_ALLOW_RAW_REQUEST=true to enable.");
+    return toolError("The redmine_request_* tools are disabled. Set REDMINE_ALLOW_RAW_REQUEST=true to enable.");
   }
   return null;
 }

@@ -40,3 +40,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 export function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, "");
 }
+
+/** Typed settings for embedding the server as a library (e.g. one config per hosted connection). */
+export type ConfigOptions = {
+  baseUrl: string;
+  apiKey: string;
+  impersonateUser?: string;
+  readonly?: boolean;
+  allowRawRequest?: boolean;
+  httpTimeoutMs?: number;
+  maxPages?: number;
+  maxDownloadBytes?: number;
+};
+
+/** Build an AppConfig from typed options, with the same validation and defaults as loadConfig(). */
+export function createConfig(options: ConfigOptions): AppConfig {
+  const str = (v: number | undefined) => (v === undefined ? undefined : String(v));
+  return loadConfig({
+    REDMINE_BASE_URL: options.baseUrl,
+    REDMINE_API_KEY: options.apiKey,
+    REDMINE_IMPERSONATE_USER: options.impersonateUser,
+    REDMINE_READONLY: options.readonly ? "true" : undefined,
+    REDMINE_ALLOW_RAW_REQUEST: options.allowRawRequest ? "true" : undefined,
+    REDMINE_HTTP_TIMEOUT_MS: str(options.httpTimeoutMs),
+    REDMINE_MAX_PAGES: str(options.maxPages),
+    REDMINE_MAX_DOWNLOAD_BYTES: str(options.maxDownloadBytes),
+  });
+}

@@ -1,11 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { fetchAllRedmineList } from "../redmine/pagination.js";
-import { confirmDestructiveSchema, paginationSchema } from "../util/schemas.js";
+import { confirmDestructiveSchema, idOrIdentifier, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
 
 export function registerTimeEntryTools(server: McpServer, ctx: AppContext): string[] {
   const names: string[] = [];
@@ -14,14 +14,15 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
   server.registerTool(
     "redmine_time_entries_list",
     {
+      ...readTool("List time entries"),
       description: "List time entries (GET /time_entries.json).",
       inputSchema: z.object({
         ...paginationSchema,
-        project_id: z.coerce.number().optional(),
+        project_id: idOrIdentifier("project id or identifier").optional(),
         issue_id: z.coerce.number().optional(),
-        user_id: z.coerce.number().optional(),
-        from: z.string().optional(),
-        to: z.string().optional(),
+        user_id: z.union([z.coerce.number(), z.literal("me")]).optional().describe('user id, or "me"'),
+        from: z.string().optional().describe("YYYY-MM-DD, inclusive"),
+        to: z.string().optional().describe("YYYY-MM-DD, inclusive"),
         activity_id: z.coerce.number().optional(),
       }),
     },
@@ -52,10 +53,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -64,6 +62,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
   server.registerTool(
     "redmine_time_entry_get",
     {
+      ...readTool("Get time entry"),
       description: "Get time entry (GET /time_entries/:id.json).",
       inputSchema: z.object({ id: z.coerce.number().int().positive() }),
     },
@@ -72,10 +71,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
         const data = await ctx.client.get(`/time_entries/${id}.json`);
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -84,6 +80,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
   server.registerTool(
     "redmine_time_entry_create",
     {
+      ...writeTool("Log time"),
       description: "Create time entry (POST /time_entries.json).",
       inputSchema: z.object({ time_entry: z.record(z.unknown()) }),
     },
@@ -94,10 +91,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
         const data = await ctx.client.post("/time_entries.json", { time_entry });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -106,6 +100,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
   server.registerTool(
     "redmine_time_entry_update",
     {
+      ...destructiveTool("Update time entry"),
       description: "Update time entry (PUT /time_entries/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -119,10 +114,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
         const data = await ctx.client.put(`/time_entries/${id}.json`, { time_entry });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -131,6 +123,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
   server.registerTool(
     "redmine_time_entry_delete",
     {
+      ...destructiveTool("Delete time entry"),
       description: "Delete time entry (DELETE /time_entries/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -146,10 +139,7 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
         await ctx.client.delete(`/time_entries/${id}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );

@@ -13,6 +13,18 @@ export type RequestOptions = {
   binaryResponse?: boolean;
 };
 
+export type RedmineClientOptions = {
+  /**
+   * fetch implementation used for every Redmine call. Hosted deployments pass an
+   * SSRF-guarded fetch here; defaults to the global fetch.
+   */
+  fetch?: typeof fetch;
+};
+
+export type BinaryDownload =
+  | { ok: true; data: Buffer; contentType: string }
+  | { ok: false; tooLarge: true; size: number };
+
 export class RedmineHttpError extends Error {
   constructor(
     message: string,
@@ -53,13 +65,15 @@ export class RedmineClient {
   private readonly apiKey: string;
   private readonly impersonate?: string;
   private readonly timeoutMs: number;
+  private readonly fetchImpl: typeof fetch;
 
-  constructor(config: AppConfig) {
+  constructor(config: AppConfig, options: RedmineClientOptions = {}) {
     this.base = normalizeBaseUrl(config.REDMINE_BASE_URL);
     this.baseUrl = this.base;
     this.apiKey = config.REDMINE_API_KEY;
     this.impersonate = config.REDMINE_IMPERSONATE_USER;
     this.timeoutMs = config.REDMINE_HTTP_TIMEOUT_MS;
+    this.fetchImpl = options.fetch ?? fetch;
   }
 
   private headers(extra?: Record<string, string>, contentTypeJson = true): Headers {
@@ -96,7 +110,7 @@ export class RedmineClient {
             init.body = JSON.stringify(options.body);
           }
         }
-        const res = await fetch(url, init);
+        const res = await this.fetchImpl(url, init);
         if (
           method === "GET" &&
           attempt < maxAttempts &&
@@ -171,7 +185,7 @@ export class RedmineClient {
     const t = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       const h = this.headers({ "Content-Type": "application/octet-stream" }, false);
-      const res = await fetch(url, {
+      const res = await this.fetchImpl(url, {
         method: "POST",
         headers: h,
         body: Buffer.from(data),
@@ -182,6 +196,45 @@ export class RedmineClient {
         throw new RedmineHttpError(`${res.status} ${text}`, res.status, path);
       }
       return (await res.json()) as { upload: { token: string } };
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  /**
+   * GET a binary resource, refusing bodies larger than maxBytes (checked against
+   * Content-Length first, so oversized files are not buffered).
+   */
+  async getBinary(path: string, maxBytes: number): Promise<BinaryDownload> {
+    const url = `${this.base}${path}`;
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const res = await this.fetchImpl(url, {
+        headers: this.headers(undefined, false),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        await res.body?.cancel();
+        throw new RedmineHttpError(`${res.status} ${res.statusText} for GET ${path}`, res.status, path);
+      }
+      const declared = Number(res.headers.get("content-length") ?? NaN);
+      if (declared > maxBytes) {
+        await res.body?.cancel();
+        return { ok: false, tooLarge: true, size: declared };
+      }
+      const data = Buffer.from(await res.arrayBuffer());
+      if (data.length > maxBytes) return { ok: false, tooLarge: true, size: data.length };
+      return {
+        ok: true,
+        data,
+        contentType: res.headers.get("content-type") ?? "application/octet-stream",
+      };
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        throw new RedmineHttpError(`Request timeout after ${this.timeoutMs}ms`, 0, path);
+      }
+      throw e;
     } finally {
       clearTimeout(t);
     }

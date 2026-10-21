@@ -1,11 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
-import { RedmineHttpError } from "../redmine/client.js";
 import { fetchAllRedmineList } from "../redmine/pagination.js";
 import { confirmDestructiveSchema, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
-import { toolJson } from "../util/result.js";
+import { toolJson, toolRedmineError } from "../util/result.js";
+import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
 
 export function registerUserTools(server: McpServer, ctx: AppContext): string[] {
   const names: string[] = [];
@@ -14,6 +14,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_current_user",
     {
+      ...readTool("Get current user"),
       description: "Current user (GET /users/current.json).",
       inputSchema: z.object({
         include: z.array(z.enum(["memberships", "groups", "api_key", "auth_source"])).optional(),
@@ -24,10 +25,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
         const data = await ctx.client.get("/users/current.json", { include });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -36,6 +34,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_users_list",
     {
+      ...readTool("List users"),
       description: "List users (GET /users.json). Admin may be required.",
       inputSchema: z.object({
         ...paginationSchema,
@@ -65,10 +64,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
         });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -77,6 +73,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_user_get",
     {
+      ...readTool("Get user"),
       description: "Get user (GET /users/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -88,10 +85,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
         const data = await ctx.client.get(`/users/${id}.json`, { include });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -100,6 +94,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_user_create",
     {
+      ...writeTool("Create user"),
       description: "Create user (POST /users.json).",
       inputSchema: z.object({ user: z.record(z.unknown()) }),
     },
@@ -110,10 +105,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
         const data = await ctx.client.post("/users.json", { user });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -122,6 +114,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_user_update",
     {
+      ...destructiveTool("Update user"),
       description: "Update user (PUT /users/:id.json).",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -135,10 +128,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
         const data = await ctx.client.put(`/users/${id}.json`, { user });
         return toolJson(data);
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
@@ -147,6 +137,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
   server.registerTool(
     "redmine_user_delete",
     {
+      ...destructiveTool("Delete user"),
       description: "Delete user (DELETE /users/:id.json). Requires confirm: true.",
       inputSchema: z.object({
         id: z.coerce.number().int().positive(),
@@ -162,10 +153,7 @@ export function registerUserTools(server: McpServer, ctx: AppContext): string[] 
         await ctx.client.delete(`/users/${id}.json`);
         return toolJson({ ok: true, deleted_id: id });
       } catch (e) {
-        return toolJson(
-          { error: e instanceof RedmineHttpError ? e.message : String(e) },
-          true,
-        );
+        return toolRedmineError(e);
       }
     },
   );
