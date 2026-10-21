@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppContext } from "../context.js";
 import { fetchAllRedmineList } from "../redmine/pagination.js";
-import { confirmDestructiveSchema, paginationSchema } from "../util/schemas.js";
+import { confirmDestructiveSchema, idOrIdentifier, paginationSchema } from "../util/schemas.js";
 import { assertConfirmed, assertWritable } from "../util/safety.js";
 import { toolJson, toolRedmineError } from "../util/result.js";
 import { destructiveTool, readTool, writeTool } from "../util/annotations.js";
@@ -18,11 +18,11 @@ export function registerTimeEntryTools(server: McpServer, ctx: AppContext): stri
       description: "List time entries (GET /time_entries.json).",
       inputSchema: z.object({
         ...paginationSchema,
-        project_id: z.coerce.number().optional(),
+        project_id: idOrIdentifier("project id or identifier").optional(),
         issue_id: z.coerce.number().optional(),
-        user_id: z.coerce.number().optional(),
-        from: z.string().optional(),
-        to: z.string().optional(),
+        user_id: z.union([z.coerce.number(), z.literal("me")]).optional().describe('user id, or "me"'),
+        from: z.string().optional().describe("YYYY-MM-DD, inclusive"),
+        to: z.string().optional().describe("YYYY-MM-DD, inclusive"),
         activity_id: z.coerce.number().optional(),
       }),
     },

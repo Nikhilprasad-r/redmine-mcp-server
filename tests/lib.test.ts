@@ -119,3 +119,18 @@ describe("createRedmineServer", () => {
     await client.close();
   });
 });
+
+describe("redmine_time_entries_list", () => {
+  it("accepts a project identifier and user_id \"me\", as Redmine does", async () => {
+    const calls: Call[] = [];
+    const rs = createRedmineServer({
+      config: createConfig({ baseUrl: "https://a.example", apiKey: "k" }),
+      fetch: fakeFetch(calls),
+    });
+    const result = await callTool(rs, "redmine_time_entries_list", { project_id: "website", user_id: "me", from: "2026-10-01" });
+    expect(result.isError).toBeFalsy();
+    const url = new URL(calls[0].url);
+    expect(url.pathname).toBe("/time_entries.json");
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ project_id: "website", user_id: "me", from: "2026-10-01" });
+  });
+});
